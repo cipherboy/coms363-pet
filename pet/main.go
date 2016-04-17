@@ -30,16 +30,29 @@ func main() {
                 for !stop {
                     var attribute_name string
                     var attribute_type int
+                    var err error
 
                     for {
                         rst_2 := readline.ReadLine(&(prompt[1]))
                         if rst_2 != nil {
                             attribute_name = *rst_2;
 
-                            if strings.Contains(attribute_name, ":") || strings.Contains(attribute_name, "[") || strings.Contains(attribute_name, "]") {
-                                fmt.Println("Invalid character in attribute name. Invalid characters are ':', '['. and ']'.")
+                            if strings.Contains(attribute_name, ":") || strings.Contains(attribute_name, "[") || strings.Contains(attribute_name, "]") || strings.Contains(attribute_name, ",") {
+                                fmt.Println("Invalid character in attribute name. Invalid characters are ':', ',', '['. and ']'.")
                                 continue
                             } else {
+                                var found bool = false
+                                for i := range(attribute_names) {
+                                    if attribute_names[i] == attribute_name {
+                                        found = true
+                                        break
+                                    }
+                                }
+
+                                if (found) {
+                                    fmt.Println("Name already in use; please specify another.")
+                                    continue
+                                }
                                 break
                             }
                         } else {
@@ -51,9 +64,9 @@ func main() {
                         rst_2 := readline.ReadLine(&(prompt[2]))
                         if rst_2 != nil {
                             tmp_string := *rst_2;
-                            attributes_type, err := strconv.Atoi(tmp_string)
+                            attribute_type, err = strconv.Atoi(tmp_string)
 
-                            if  err != nil || attributes_type < 1 || attributes_type > 4 {
+                            if  err != nil || attribute_type < 1 || attribute_type > 4 {
                                 fmt.Println("Invalid character in attribute type. Must be an integer, [1...4].")
                                 continue
                             } else {
@@ -73,7 +86,7 @@ func main() {
                             tmp_string := strings.ToLower(strings.Trim(*rst_2, " \n\t"));
 
                             if tmp_string != "y" && tmp_string != "n" {
-                                fmt.Println("Invalid character in attribute type. Must be an integer, [1...4].")
+                                fmt.Println("Invalid character in attribute type. Must be either y or n.")
                                 continue
                             } else {
                                 if tmp_string == "n" {
