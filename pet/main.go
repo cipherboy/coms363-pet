@@ -37,8 +37,8 @@ func main() {
                         if rst_2 != nil {
                             attribute_name = *rst_2;
 
-                            if strings.Contains(attribute_name, ":") || strings.Contains(attribute_name, "[") || strings.Contains(attribute_name, "]") || strings.Contains(attribute_name, ",") {
-                                fmt.Println("Invalid character in attribute name. Invalid characters are ':', ',', '['. and ']'.")
+                            if strings.Contains(attribute_name, ":") || strings.Contains(attribute_name, "[") || strings.Contains(attribute_name, "]") {
+                                fmt.Println("Invalid character in attribute name. Invalid characters are ':', '['. and ']'.")
                                 continue
                             } else {
                                 var found bool = false
