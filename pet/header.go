@@ -8,8 +8,6 @@ import (
     "strconv"
 )
 
-var columTypeToName map[int]string = map[int]string{1: "integer", 2: "double", 3: "boolean", 4: "string"}
-
 func TableHeader(filename string) {
     fmt.Println("Call to header with:", filename)
 
@@ -76,7 +74,7 @@ func TableHeader(filename string) {
         var attribute_type int = 0
 
         attribute_type, err = strconv.Atoi(item[1])
-        if err != nil {
+        if err != nil || attribute_type < 1 || attribute_type > 4 {
             fmt.Println("Fatal Error: malformed header. In column", i, ": cannot parse `", item[1], "` as integer. Error: ", err)
             return
         }

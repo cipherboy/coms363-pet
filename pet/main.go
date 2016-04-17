@@ -7,6 +7,8 @@ import (
     "strconv"
 )
 
+var columTypeToName map[int]string = map[int]string{1: "integer", 2: "double", 3: "boolean", 4: "string"}
+
 func main() {
 	prompt := []string{"pet> ", "Attribute name> ", "Valid attribute types:\n 1) Integer ;; 2) Double ;; 3) Boolean ;; 4) String\n\nType> ", "Additional attribute (y/n)> ", "rid> "}
 	for {
