@@ -11,16 +11,17 @@ var columTypeToName map[int]string = map[int]string{1: "integer", 2: "double", 3
 
 func main() {
 	prompt := []string{"pet> ", "Attribute name> ", "Valid attribute types:\n 1) Integer ;; 2) Double ;; 3) Boolean ;; 4) String\n\nType> ", "Additional attribute (y/n)> ", "rid> "}
+    help_text := "PET: PET Editing of Tables\n--------------------------\nBy Alexander Scheel\n\nCommands\n========\ncreate <filename>\t\t\t--\tcreates a database; prompts for attributes\nheader <filename>\t\t\t--\tdisplays attributes of a database\ninsert <filename>\t\t\t--\tinserts into a database; prompts for values\ndisplay <rid> <filename>\t\t--\tdisplays the <rid>th entry of the database\ndelete <rid> <filename>\t\t\t--\tdeletes the <rid>th entry of the database\nsearch \"<condition>\" <filename>\t\t--\tsearches for the given condition in the database.\nhelp\t\t\t\t\t--\tprints this help message\n\n\n"
 	for {
 		rst := readline.ReadLine(&(prompt[0]))
 		if rst != nil {
-			result := strings.Split(strings.ToLower(strings.Trim(*rst, " \n\t")), " ")
+			result := strings.Split(strings.ToLower(strings.Trim(*rst, " \t\n")), " ")
 			switch result[0] {
 			case "quit":
 				return
 			case "create":
 				if len(result) != 2 {
-					fmt.Println("Error; invalid number of arguments to create: have", len(result), " but expected 2.")
+					fmt.Println("Error; invalid number of arguments to create: have", len(result), "but expected 2.")
 					break
 				}
 
@@ -85,7 +86,7 @@ func main() {
 					for {
 						rst_2 := readline.ReadLine(&(prompt[3]))
 						if rst_2 != nil {
-							tmp_string := strings.ToLower(strings.Trim(*rst_2, " \n\t"))
+							tmp_string := strings.ToLower(strings.Trim(*rst_2, " \n"))
 
 							if tmp_string != "y" && tmp_string != "n" {
 								fmt.Println("Invalid character in attribute type. Must be either y or n.")
@@ -105,21 +106,21 @@ func main() {
 				TableCreate(attribute_names, attribute_types, result[1])
 			case "header":
 				if len(result) != 2 {
-					fmt.Println("Error; invalid number of arguments to header: have", len(result), " but expected 2.")
+					fmt.Println("Error; invalid number of arguments to header: have", len(result), "but expected 2.")
 					break
 				}
 
 				TableHeader(result[1])
 			case "insert":
 				if len(result) != 2 {
-					fmt.Println("Error; invalid number of arguments to insert: have", len(result), " but expected 2.")
+					fmt.Println("Error; invalid number of arguments to insert: have", len(result), "but expected 2.")
 					break
 				}
 
 				TableInsert(result[1])
 			case "display":
 				if len(result) != 3 {
-					fmt.Println("Error; invalid number of arguments to display: have", len(result), " but expected 3.")
+					fmt.Println("Error; invalid number of arguments to display: have", len(result), "but expected 3.")
 					break
 				}
 
@@ -149,7 +150,7 @@ func main() {
 				TableDisplay(row_id, result[2])
 			case "delete":
 				if len(result) != 3 {
-					fmt.Println("Error; invalid number of arguments to delete: have", len(result), " but expected 3.")
+					fmt.Println("Error; invalid number of arguments to delete: have", len(result), "but expected 3.")
 					break
 				}
 
@@ -178,17 +179,26 @@ func main() {
 
 				TableDelete(row_id, result[2])
 			case "search":
-				if len(result) != 2 {
-					fmt.Println("Error; invalid number of arguments to search: have", len(result), " but expected 3.")
+    			query := strings.Split(strings.Trim(*rst, " \t\n"), "\"")
+                if len(query) != 3 {
+					fmt.Println("Error; invalid number of arguments to search: have", len(query), "but expected at least 3.")
 					break
-				}
+                }
 
-				// TODO : Search
+                query[1] = strings.Trim(query[1], " \t\n")
+                query[2] = strings.Trim(query[2], " \t\n")
+
+                if len(query[2]) == 0 || query[2] != result[len(result)-1] {
+					fmt.Println("Error; invalid filename after search query.")
+					break
+                }
+
+                TableSearch(query[1], query[2])
 			case "help":
-				fmt.Print("Commands: \n\tcreate <filename>\t\t--\tcreates a database; prompts for attributes\n\theader <filename>\t\t--\tdisplays attributes of a database\n\tinsert <filename>\t\t--\tinserts into a database; prompts for values\n\tdisplay <rid> <filename>\t--\tdisplays the <rid>th entry of the database\n\tdelete <rid> <filename>\t\t--\tdeletes the <rid>th entry of the database\n\tsearch \"<condition>\" <filename>\t--\tsearches for the given condition in the database.\n\thelp\t\t\t\t--\tprints this help message\n\n\n")
+				fmt.Print(help_text)
 			default:
 				fmt.Println("Unknown command:", result[0])
-				fmt.Print("Commands: \n\tcreate <filename>\t\t--\tcreates a database; prompts for attributes\n\theader <filename>\t\t--\tdisplays attributes of a database\n\tinsert <filename>\t\t--\tinserts into a database; prompts for values\n\tdisplay <rid> <filename>\t--\tdisplays the <rid>th entry of the database\n\tdelete <rid> <filename>\t\t--\tdeletes the <rid>th entry of the database\n\tsearch \"<condition>\" <filename>\t--\tsearches for the given condition in the database.\n\thelp\t\t\t\t--\tprints this help message\n\n\n")
+				fmt.Print(help_text)
 			}
 		} else {
 			fmt.Print("\n")
