@@ -8,6 +8,13 @@ import (
 	"strings"
 )
 
+type query_part struct {
+	name     string
+	id       int
+	value    string
+	required bool
+}
+
 func TableSearch(query string, filename string) {
 	fmt.Println("Call to search with:", filename, "and query", query)
 

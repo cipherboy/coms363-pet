@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/shavac/readline"
+	"github.com/chzyer/readline"
 	"strconv"
 	"strings"
 )
@@ -12,12 +12,41 @@ var columTypeToName map[int]string = map[int]string{1: "integer", 2: "double", 3
 func main() {
 	prompt := []string{"pet> ", "Attribute name> ", "Valid attribute types:\n 1) Integer ;; 2) Double ;; 3) Boolean ;; 4) String\n\nType> ", "Additional attribute (y/n)> ", "rid> "}
     help_text := "PET: PET Editing of Tables\n--------------------------\nBy Alexander Scheel\n\nCommands\n========\ncreate <filename>\t\t\t--\tcreates a database; prompts for attributes\nheader <filename>\t\t\t--\tdisplays attributes of a database\ninsert <filename>\t\t\t--\tinserts into a database; prompts for values\ndisplay <rid> <filename>\t\t--\tdisplays the <rid>th entry of the database\ndelete <rid> <filename>\t\t\t--\tdeletes the <rid>th entry of the database\nsearch \"<condition>\" <filename>\t\t--\tsearches for the given condition in the database.\nhelp\t\t\t\t\t--\tprints this help message\n\n\n"
+
+
+	var completer = readline.NewPrefixCompleter(
+	    readline.PcItem("create"),
+	    readline.PcItem("delete"),
+	    readline.PcItem("display"),
+	    readline.PcItem("header"),
+	    readline.PcItem("insert"),
+	    readline.PcItem("search"),
+	    readline.PcItem("quit"),
+	    readline.PcItem("exit"),
+	    readline.PcItem("help"),
+	)
+
+	rl, err := readline.NewEx(&readline.Config{
+		Prompt: prompt[0],
+		InterruptPrompt: "^C",
+		AutoComplete: completer,
+	})
+
+	if err != nil {
+	    fmt.Println("Readline error:", err)
+		return
+	}
+	defer rl.Close()
+
+
 	for {
-		rst := readline.ReadLine(&(prompt[0]))
-		if rst != nil {
-			result := strings.Split(strings.ToLower(strings.Trim(*rst, " \t\n")), " ")
+		line, err := rl.Readline()
+		if err == nil {
+			result := strings.Split(strings.ToLower(strings.Trim(line, " \t\n")), " ")
 			switch result[0] {
 			case "quit":
+				return
+			case "exit":
 				return
 			case "create":
 				if len(result) != 2 {
@@ -33,12 +62,17 @@ func main() {
 				for !stop {
 					var attribute_name string
 					var attribute_type int
-					var err error
 
 					for {
-						rst_2 := readline.ReadLine(&(prompt[1]))
-						if rst_2 != nil {
-							attribute_name = *rst_2
+						rl2, err := readline.New(prompt[1])
+						if err != nil {
+						    fmt.Println("Readline error:", err)
+							return
+						}
+						defer rl2.Close()
+						line2, err := rl2.Readline()
+						if err == nil {
+							attribute_name = line2
 
 							if strings.Contains(attribute_name, ":") || strings.Contains(attribute_name, "[") || strings.Contains(attribute_name, "]") {
 								fmt.Println("Invalid character in attribute name. Invalid characters are ':', '['. and ']'.")
@@ -64,9 +98,15 @@ func main() {
 					}
 
 					for {
-						rst_2 := readline.ReadLine(&(prompt[2]))
-						if rst_2 != nil {
-							tmp_string := *rst_2
+						rl2, err := readline.New(prompt[2])
+						if err != nil {
+						    fmt.Println("Readline error:", err)
+							return
+						}
+						defer rl2.Close()
+						line2, err := rl2.Readline()
+						if err == nil {
+							tmp_string := line2
 							attribute_type, err = strconv.Atoi(tmp_string)
 
 							if err != nil || attribute_type < 1 || attribute_type > 4 {
@@ -84,9 +124,15 @@ func main() {
 					attribute_types = append(attribute_types, attribute_type)
 
 					for {
-						rst_2 := readline.ReadLine(&(prompt[3]))
-						if rst_2 != nil {
-							tmp_string := strings.ToLower(strings.Trim(*rst_2, " \n"))
+						rl2, err := readline.New(prompt[3])
+						if err != nil {
+						    fmt.Println("Readline error:", err)
+							return
+						}
+						defer rl2.Close()
+						line2, err := rl2.Readline()
+						if err == nil {
+							tmp_string := strings.ToLower(strings.Trim(line2, " \n"))
 
 							if tmp_string != "y" && tmp_string != "n" {
 								fmt.Println("Invalid character in attribute type. Must be either y or n.")
@@ -130,9 +176,15 @@ func main() {
 
 				if err != nil || row_id < 0 {
 					for {
-						rst_2 := readline.ReadLine(&(prompt[4]))
-						if rst_2 != nil {
-							tmp_string := *rst_2
+						rl2, err := readline.New(prompt[4])
+						if err != nil {
+						    fmt.Println("Readline error:", err)
+							return
+						}
+						defer rl2.Close()
+						line2, err := rl2.Readline()
+						if err == nil {
+							tmp_string := line2
 							row_id, err = strconv.Atoi(tmp_string)
 
 							if err != nil || row_id < 0 {
@@ -160,9 +212,15 @@ func main() {
 
 				if err != nil || row_id < 0 {
 					for {
-						rst_2 := readline.ReadLine(&(prompt[4]))
-						if rst_2 != nil {
-							tmp_string := *rst_2
+						rl2, err := readline.New(prompt[4])
+						if err != nil {
+						    fmt.Println("Readline error:", err)
+							return
+						}
+						defer rl2.Close()
+						line2, err := rl2.Readline()
+						if err == nil {
+							tmp_string := line2
 							row_id, err = strconv.Atoi(tmp_string)
 
 							if err != nil || row_id < 0 {
@@ -179,7 +237,7 @@ func main() {
 
 				TableDelete(row_id, result[2])
 			case "search":
-    			query := strings.Split(strings.Trim(*rst, " \t\n"), "\"")
+    			query := strings.Split(strings.Trim(line, " \t\n"), "\"")
                 if len(query) != 3 {
 					fmt.Println("Error; invalid number of arguments to search: have", len(query), "but expected at least 3.")
 					break
