@@ -109,6 +109,33 @@ func TableSearch(query string, filename string) {
     for i := range(attribute_names) {
         if attribute_names[i] == target_column {
             found_name = i
+			if attribute_types[i] == 1 {
+				_, err = strconv.Atoi(target_value)
+
+				if err != nil {
+					fmt.Println("Fatal Error: Unable to convert search query to integer", err)
+					return
+				}
+			} else if attribute_types[i] == 2 {
+				_, err = strconv.ParseFloat(target_value, 64)
+
+				if err != nil {
+					fmt.Println("Fatal Error: Unable to convert search query to double", err)
+					return
+				}
+			} else if attribute_types[i] == 3 {
+				target_value = strings.ToUpper(target_value)
+
+				if target_value != "T" && target_value != "F" {
+					fmt.Println("Fatal Error: search query unknown boolean value: expected either T or F.")
+					return
+				}
+			} else if attribute_types[i] == 4 {
+				if strings.Contains(target_value, "|") || strings.Contains(target_value, "{") || strings.Contains(target_value, "}") {
+					fmt.Println("Invalid character in search query string value. Invalid characters are '|', '{'. and '}'.")
+					return
+				}
+			}
         }
     }
 
@@ -117,15 +144,108 @@ func TableSearch(query string, filename string) {
         return
     }
 
-    // TODO : Validate that type of search value matches given value
-
     file = file[1:]
     for i := range(file) {
         var line string = file[i][1:len(file[i])-1]
         var values []string = strings.Split(line, "|")
-        if (values[found_name] == target_value) {
-            fmt.Println("rid:", i, "matches!")
-        }
+
+
+		if attribute_types[found_name] == 1 {
+			tv, err := strconv.Atoi(target_value)
+			cv, err2 := strconv.Atoi(values[found_name])
+
+			if err != nil {
+				fmt.Println("Fatal Error: Unable to convert search query to integer:", err)
+				return
+			} else if err2 != nil {
+				fmt.Println("Invalid integer in table data; ignoring row:", err2)
+				continue
+			} else {
+		        if (cv == tv) {
+		            fmt.Println("====rid:", i, "matches!====")
+
+					var row []string = strings.Split(file[i][1:len(file[i])-1], "|")
+					if len(row) != columns {
+						fmt.Println("Fatal Error: mismatched number of columns: have", len(row), ", expected:", columns)
+					}
+
+					for i := range row {
+						fmt.Println(attribute_names[i], "("+columTypeToName[attribute_types[i]]+"): "+row[i])
+					}
+
+					fmt.Print("\n\n")
+		        }
+			}
+		} else if attribute_types[found_name] == 2 {
+			tv, err := strconv.ParseFloat(target_value, 64)
+			cv, err2 := strconv.ParseFloat(values[found_name], 64)
+
+			if err != nil {
+				fmt.Println("Fatal Error: Unable to convert search query to double", err)
+				return
+			} else if err2 != nil {
+				fmt.Println("Invalid double in table data; ignoring row:", err2)
+				continue
+			} else {
+		        if (cv == tv) {
+		            fmt.Println("====rid:", i, "matches!====")
+
+					var row []string = strings.Split(file[i][1:len(file[i])-1], "|")
+					if len(row) != columns {
+						fmt.Println("Fatal Error: mismatched number of columns: have", len(row), ", expected:", columns)
+					}
+
+					for i := range row {
+						fmt.Println(attribute_names[i], "("+columTypeToName[attribute_types[i]]+"): "+row[i])
+					}
+
+					fmt.Print("\n\n")
+		        }
+			}
+		} else if attribute_types[found_name] == 3 {
+			target_value = strings.ToUpper(target_value)
+			values[found_name] = strings.ToUpper(values[found_name])
+
+			if values[found_name] != "T" && values[found_name] != "F" {
+				fmt.Println("Invalid boolean in table data; ignoring row: expected either T or F.")
+				continue
+			} else {
+		        if (values[found_name] == target_value) {
+		            fmt.Println("====rid:", i, "matches!====")
+
+					var row []string = strings.Split(file[i][1:len(file[i])-1], "|")
+					if len(row) != columns {
+						fmt.Println("Fatal Error: mismatched number of columns: have", len(row), ", expected:", columns)
+					}
+
+					for i := range row {
+						fmt.Println(attribute_names[i], "("+columTypeToName[attribute_types[i]]+"): "+row[i])
+					}
+
+					fmt.Print("\n\n")
+		        }
+			}
+		} else if attribute_types[found_name] == 4 {
+			if strings.Contains(values[found_name], "|") || strings.Contains(values[found_name], "{") || strings.Contains(values[found_name], "}") {
+				fmt.Println("Invalid string character in table data; ignoring row.")
+				continue
+			} else {
+		        if (values[found_name] == target_value) {
+		            fmt.Println("====rid:", i, "matches!====")
+
+					var row []string = strings.Split(file[i][1:len(file[i])-1], "|")
+					if len(row) != columns {
+						fmt.Println("Fatal Error: mismatched number of columns: have", len(row), ", expected:", columns)
+					}
+
+					for i := range row {
+						fmt.Println(attribute_names[i], "("+columTypeToName[attribute_types[i]]+"): "+row[i])
+					}
+
+					fmt.Print("\n\n")
+		        }
+			}
+		}
     }
 
 	fmt.Println("Successfully searched in table `", filename, "`!")
