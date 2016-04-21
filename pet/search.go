@@ -14,6 +14,7 @@ type query_part struct {
 	Value     string
 	Operation int
 	Required  bool
+    Join      int
 }
 
 /**
@@ -27,20 +28,20 @@ type query_part struct {
  * 		<= -- 4
  * 		!= -- 5
  *
+ * Join:
+ *      and  -- 0
+ *      or   -- 1
+ *      none -- 2
+ *
  * name = 1
  * name     =             1
  * ^ name   ^ operation   ^ value
 **/
-func parseQuery(query string) []query_part {
-	var parts []string = strings.Split(query, " ")
+func tokenizeQuery(query string) []query_part {
+
 	var result []query_part = make([]query_part, 0)
 
 	var operators map[string]int = map[string]int{"=": 0, ">": 1, "<": 2, ">=": 3, "<=": 4, "!=": 5}
-
-	if len(parts) % 3 != 0 {
-		fmt.Println("Fatal Error: invalid query.")
-		return nil
-	}
 
 	for i := 0; i < len(parts); i+=3 {
 		var current query_part
