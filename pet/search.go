@@ -37,8 +37,8 @@ type query_part struct {
  * name     =             1
  * ^ name   ^ operation   ^ value
 **/
-func tokenizeQuery(query string) []query_part {
-
+func parseQuery(query string) []query_part {
+	var parts []string = strings.Split(query, " ")
 	var result []query_part = make([]query_part, 0)
 
 	var operators map[string]int = map[string]int{"=": 0, ">": 1, "<": 2, ">=": 3, "<=": 4, "!=": 5}

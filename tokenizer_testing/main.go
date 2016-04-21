@@ -172,11 +172,39 @@ func relationizeTokens(set []token) ([]rtoken, error) {
         result = append(result, current)
     }
 
+    if result[0].Type == join_rtoken_type || result[len(result)-1].Type == join_rtoken_type {
+        return []rtoken(nil), errors.New("Invalid relation: cannot have relation set begin or end with type join.")
+    }
+
+    for i := 0; i < len(result)-1; i++ {
+        if result[i].Type == result[i+1].Type {
+            return []rtoken(nil), errors.New("Invalid relation: cannot have adjacent tokens of type " + rtoken_types_to_names[result[i].Type] + "(" + strconv.Itoa(result[i].Type) + ")")
+        }
+    }
+
+    return result, nil
+}
+
+type evalTree struct {
+    Join        int
+    Left        *evalTree
+    Right       *evalTree
+    Relation    rtoken
+    Value       bool
+}
+
+func evalTreeizeRelation(set []rtoken) (evalTree, error) {
+    var result evalTree
+
+    for i := 0; i < len(set); i++ {
+
+    }
+
     return result, nil
 }
 
 func main() {
-    query := "wonderful == 2341 && other >= 12345 || something = 'Testing' && magical != 2"
+    query := "wonderful == 2341 && other >= value || something = 'Testing' && magical != 2"
     fmt.Println("Parsing query: `" + query + "`")
     var tokens []token
     tokens, err := tokenizeQuery(query)
