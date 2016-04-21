@@ -9,25 +9,68 @@ import (
 )
 
 type query_part struct {
-	name     string
-	id       int
-	value    string
-	required bool
+	Name      string
+	ID        int
+	Value     string
+	Operation int
+	Required  bool
+}
+
+/**
+ * Basic tokenizer; splits on space
+ *
+ * Operators:
+ * 		=  -- 0
+ * 		>  -- 1
+ * 		<  -- 2
+ *  	>= -- 3
+ * 		<= -- 4
+ * 		!= -- 5
+ *
+ * name = 1
+ * name     =             1
+ * ^ name   ^ operation   ^ value
+**/
+func parseQuery(query string) []query_part {
+	var parts []string = strings.Split(query, " ")
+	var result []query_part = make([]query_part, 0)
+
+	var operators map[string]int = map[string]int{"=": 0, ">": 1, "<": 2, ">=": 3, "<=": 4, "!=": 5}
+
+	if len(parts) % 3 != 0 {
+		fmt.Println("Fatal Error: invalid query.")
+		return nil
+	}
+
+	for i := 0; i < len(parts); i+=3 {
+		var current query_part
+		current.Name = parts[i]
+		current.ID = -1
+		current.Value = parts[i+2]
+		current.Required = true
+
+		value, ok := operators[parts[i+1]]
+		if !ok {
+			fmt.Println("Fatal Error: Invalid operator.")
+			return nil
+		}
+
+		current.Operation = value
+
+		result = append(result, current)
+	}
+
+	return result
 }
 
 func TableSearch(query string, filename string) {
 	fmt.Println("Call to search with:", filename, "and query", query)
 
-    var extended_query []string = strings.Split(query, "=")
-    var target_column string
-    var target_value string
-    if len(extended_query) < 2 {
-		fmt.Println("Error: malformed search query; ")
-		return
-    }
+	var full_parsed_query []query_part = parseQuery(query)
 
-    target_column = strings.Trim(extended_query[0], " \t\n")
-    target_value = strings.Trim(strings.Join(extended_query[1:], "="), " \t\n")
+	if full_parsed_query == nil {
+		return
+	}
 
 	if _, err := os.Stat(filename); os.IsNotExist(err) {
 		fmt.Println("Error: file `", filename, "` does not exist...")
@@ -105,42 +148,45 @@ func TableSearch(query string, filename string) {
 	}
 
 
-    var found_name int = -1;
     for i := range(attribute_names) {
-        if attribute_names[i] == target_column {
-            found_name = i
-			if attribute_types[i] == 1 {
-				_, err = strconv.Atoi(target_value)
+		for j := range(full_parsed_query) {
+			var parsed_query query_part = full_parsed_query[j]
 
-				if err != nil {
-					fmt.Println("Fatal Error: Unable to convert search query to integer", err)
-					return
-				}
-			} else if attribute_types[i] == 2 {
-				_, err = strconv.ParseFloat(target_value, 64)
+	        if attribute_names[i] == parsed_query.Name {
+	            parsed_query.ID = i
+				if attribute_types[i] == 1 {
+					_, err = strconv.Atoi(parsed_query.Value)
 
-				if err != nil {
-					fmt.Println("Fatal Error: Unable to convert search query to double", err)
-					return
-				}
-			} else if attribute_types[i] == 3 {
-				target_value = strings.ToUpper(target_value)
+					if err != nil {
+						fmt.Println("Fatal Error: Unable to convert search query to integer", err)
+						return
+					}
+				} else if attribute_types[i] == 2 {
+					_, err = strconv.ParseFloat(parsed_query.Value, 64)
 
-				if target_value != "T" && target_value != "F" {
-					fmt.Println("Fatal Error: search query unknown boolean value: expected either T or F.")
-					return
+					if err != nil {
+						fmt.Println("Fatal Error: Unable to convert search query to double", err)
+						return
+					}
+				} else if attribute_types[i] == 3 {
+					parsed_query.Value = strings.ToUpper(parsed_query.Value)
+
+					if parsed_query.Value != "T" && parsed_query.Value != "F" {
+						fmt.Println("Fatal Error: search query unknown boolean value: expected either T or F.")
+						return
+					}
+				} else if attribute_types[i] == 4 {
+					if strings.Contains(parsed_query.Value, "|") || strings.Contains(parsed_query.Value, "{") || strings.Contains(parsed_query.Value, "}") {
+						fmt.Println("Invalid character in search query string value. Invalid characters are '|', '{'. and '}'.")
+						return
+					}
 				}
-			} else if attribute_types[i] == 4 {
-				if strings.Contains(target_value, "|") || strings.Contains(target_value, "{") || strings.Contains(target_value, "}") {
-					fmt.Println("Invalid character in search query string value. Invalid characters are '|', '{'. and '}'.")
-					return
-				}
-			}
-        }
+	        }
+		}
     }
 
-    if found_name == -1 {
-        fmt.Println("Fatal error: Unknown column name `", target_column, "`!")
+    if parsed_query.ID == -1 {
+        fmt.Println("Fatal error: Unknown column name `", parsed_query.Name, "`!")
         return
     }
 
@@ -149,102 +195,8 @@ func TableSearch(query string, filename string) {
         var line string = file[i][1:len(file[i])-1]
         var values []string = strings.Split(line, "|")
 
-
-		if attribute_types[found_name] == 1 {
-			tv, err := strconv.Atoi(target_value)
-			cv, err2 := strconv.Atoi(values[found_name])
-
-			if err != nil {
-				fmt.Println("Fatal Error: Unable to convert search query to integer:", err)
-				return
-			} else if err2 != nil {
-				fmt.Println("Invalid integer in table data; ignoring row:", err2)
-				continue
-			} else {
-		        if (cv == tv) {
-		            fmt.Println("====rid:", i, "matches!====")
-
-					var row []string = strings.Split(file[i][1:len(file[i])-1], "|")
-					if len(row) != columns {
-						fmt.Println("Fatal Error: mismatched number of columns: have", len(row), ", expected:", columns)
-					}
-
-					for i := range row {
-						fmt.Println(attribute_names[i], "("+columTypeToName[attribute_types[i]]+"): "+row[i])
-					}
-
-					fmt.Print("\n\n")
-		        }
-			}
-		} else if attribute_types[found_name] == 2 {
-			tv, err := strconv.ParseFloat(target_value, 64)
-			cv, err2 := strconv.ParseFloat(values[found_name], 64)
-
-			if err != nil {
-				fmt.Println("Fatal Error: Unable to convert search query to double", err)
-				return
-			} else if err2 != nil {
-				fmt.Println("Invalid double in table data; ignoring row:", err2)
-				continue
-			} else {
-		        if (cv == tv) {
-		            fmt.Println("====rid:", i, "matches!====")
-
-					var row []string = strings.Split(file[i][1:len(file[i])-1], "|")
-					if len(row) != columns {
-						fmt.Println("Fatal Error: mismatched number of columns: have", len(row), ", expected:", columns)
-					}
-
-					for i := range row {
-						fmt.Println(attribute_names[i], "("+columTypeToName[attribute_types[i]]+"): "+row[i])
-					}
-
-					fmt.Print("\n\n")
-		        }
-			}
-		} else if attribute_types[found_name] == 3 {
-			target_value = strings.ToUpper(target_value)
-			values[found_name] = strings.ToUpper(values[found_name])
-
-			if values[found_name] != "T" && values[found_name] != "F" {
-				fmt.Println("Invalid boolean in table data; ignoring row: expected either T or F.")
-				continue
-			} else {
-		        if (values[found_name] == target_value) {
-		            fmt.Println("====rid:", i, "matches!====")
-
-					var row []string = strings.Split(file[i][1:len(file[i])-1], "|")
-					if len(row) != columns {
-						fmt.Println("Fatal Error: mismatched number of columns: have", len(row), ", expected:", columns)
-					}
-
-					for i := range row {
-						fmt.Println(attribute_names[i], "("+columTypeToName[attribute_types[i]]+"): "+row[i])
-					}
-
-					fmt.Print("\n\n")
-		        }
-			}
-		} else if attribute_types[found_name] == 4 {
-			if strings.Contains(values[found_name], "|") || strings.Contains(values[found_name], "{") || strings.Contains(values[found_name], "}") {
-				fmt.Println("Invalid string character in table data; ignoring row.")
-				continue
-			} else {
-		        if (values[found_name] == target_value) {
-		            fmt.Println("====rid:", i, "matches!====")
-
-					var row []string = strings.Split(file[i][1:len(file[i])-1], "|")
-					if len(row) != columns {
-						fmt.Println("Fatal Error: mismatched number of columns: have", len(row), ", expected:", columns)
-					}
-
-					for i := range row {
-						fmt.Println(attribute_names[i], "("+columTypeToName[attribute_types[i]]+"): "+row[i])
-					}
-
-					fmt.Print("\n\n")
-		        }
-			}
+		for j := range(full_parsed_query) {
+			var parsed_query query_part = full_parsed_query[j]
 		}
     }
 
