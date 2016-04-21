@@ -3,21 +3,19 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"github.com/chzyer/readline"
 	"os"
 	"strconv"
-	"github.com/chzyer/readline"
 	"strings"
 )
 
 func TableInsert(filename string) {
 	rl, err := readline.New("> ")
 	if err != nil {
-	    fmt.Println("Readline error:", err)
+		fmt.Println("Readline error:", err)
 		return
 	}
 	defer rl.Close()
-
-
 
 	fmt.Println("Call to insert with:", filename)
 
@@ -102,7 +100,7 @@ func TableInsert(filename string) {
 		var attribute_data string
 
 		for {
-			prompt := attribute_names[i] + " (" + columTypeToName[attribute_types[i]] + ")> "
+			prompt := attribute_names[i] + " (" + columnTypeToName[attribute_types[i]] + ")> "
 			rl.SetPrompt(prompt)
 			line, err := rl.Readline()
 

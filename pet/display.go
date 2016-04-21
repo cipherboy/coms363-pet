@@ -97,7 +97,7 @@ func TableDisplay(row_id int, filename string) {
 	}
 
 	for i := range row {
-		fmt.Println(attribute_names[i], "("+columTypeToName[attribute_types[i]]+"): "+row[i])
+		fmt.Println(attribute_names[i], "("+columnTypeToName[attribute_types[i]]+"): "+row[i])
 	}
 
 	fmt.Println("Successfully displayed record id", row_id, "in table `", filename, "`!")

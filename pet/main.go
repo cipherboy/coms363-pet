@@ -7,37 +7,35 @@ import (
 	"strings"
 )
 
-var columTypeToName map[int]string = map[int]string{1: "integer", 2: "double", 3: "boolean", 4: "string"}
+var columnTypeToName map[int]string = map[int]string{1: "integer", 2: "double", 3: "boolean", 4: "string"}
 
 func main() {
 	prompt := []string{"pet> ", "Attribute name> ", "Valid attribute types:\n 1) Integer ;; 2) Double ;; 3) Boolean ;; 4) String\n\nType> ", "Additional attribute (y/n)> ", "rid> "}
-    help_text := "PET: PET Editing of Tables\n--------------------------\nBy Alexander Scheel\n\nCommands\n========\ncreate <filename>\t\t\t--\tcreates a database; prompts for attributes\nheader <filename>\t\t\t--\tdisplays attributes of a database\ninsert <filename>\t\t\t--\tinserts into a database; prompts for values\ndisplay <rid> <filename>\t\t--\tdisplays the <rid>th entry of the database\ndelete <rid> <filename>\t\t\t--\tdeletes the <rid>th entry of the database\nsearch \"<condition>\" <filename>\t\t--\tsearches for the given condition in the database.\nhelp\t\t\t\t\t--\tprints this help message\n\n\n"
-
+	help_text := "PET: PET Editing of Tables\n--------------------------\nBy Alexander Scheel\n\nCommands\n========\ncreate <filename>\t\t\t--\tcreates a database; prompts for attributes\nheader <filename>\t\t\t--\tdisplays attributes of a database\ninsert <filename>\t\t\t--\tinserts into a database; prompts for values\ndisplay <rid> <filename>\t\t--\tdisplays the <rid>th entry of the database\ndelete <rid> <filename>\t\t\t--\tdeletes the <rid>th entry of the database\nsearch \"<condition>\" <filename>\t\t--\tsearches for the given condition in the database.\nhelp\t\t\t\t\t--\tprints this help message\n\n\n"
 
 	var completer = readline.NewPrefixCompleter(
-	    readline.PcItem("create"),
-	    readline.PcItem("delete"),
-	    readline.PcItem("display"),
-	    readline.PcItem("header"),
-	    readline.PcItem("insert"),
-	    readline.PcItem("search"),
-	    readline.PcItem("quit"),
-	    readline.PcItem("exit"),
-	    readline.PcItem("help"),
+		readline.PcItem("create"),
+		readline.PcItem("delete"),
+		readline.PcItem("display"),
+		readline.PcItem("header"),
+		readline.PcItem("insert"),
+		readline.PcItem("search"),
+		readline.PcItem("quit"),
+		readline.PcItem("exit"),
+		readline.PcItem("help"),
 	)
 
 	rl, err := readline.NewEx(&readline.Config{
-		Prompt: prompt[0],
+		Prompt:          prompt[0],
 		InterruptPrompt: "^C",
-		AutoComplete: completer,
+		AutoComplete:    completer,
 	})
 
 	if err != nil {
-	    fmt.Println("Readline error:", err)
+		fmt.Println("Readline error:", err)
 		return
 	}
 	defer rl.Close()
-
 
 	for {
 		line, err := rl.Readline()
@@ -66,7 +64,7 @@ func main() {
 					for {
 						rl2, err := readline.New(prompt[1])
 						if err != nil {
-						    fmt.Println("Readline error:", err)
+							fmt.Println("Readline error:", err)
 							return
 						}
 						defer rl2.Close()
@@ -100,7 +98,7 @@ func main() {
 					for {
 						rl2, err := readline.New(prompt[2])
 						if err != nil {
-						    fmt.Println("Readline error:", err)
+							fmt.Println("Readline error:", err)
 							return
 						}
 						defer rl2.Close()
@@ -126,7 +124,7 @@ func main() {
 					for {
 						rl2, err := readline.New(prompt[3])
 						if err != nil {
-						    fmt.Println("Readline error:", err)
+							fmt.Println("Readline error:", err)
 							return
 						}
 						defer rl2.Close()
@@ -178,7 +176,7 @@ func main() {
 					for {
 						rl2, err := readline.New(prompt[4])
 						if err != nil {
-						    fmt.Println("Readline error:", err)
+							fmt.Println("Readline error:", err)
 							return
 						}
 						defer rl2.Close()
@@ -214,7 +212,7 @@ func main() {
 					for {
 						rl2, err := readline.New(prompt[4])
 						if err != nil {
-						    fmt.Println("Readline error:", err)
+							fmt.Println("Readline error:", err)
 							return
 						}
 						defer rl2.Close()
@@ -237,21 +235,21 @@ func main() {
 
 				TableDelete(row_id, result[2])
 			case "search":
-    			query := strings.Split(strings.Trim(line, " \t\n"), "\"")
-                if len(query) != 3 {
+				query := strings.Split(strings.Trim(line, " \t\n"), "\"")
+				if len(query) != 3 {
 					fmt.Println("Error; invalid number of arguments to search: have", len(query), "but expected at least 3.")
 					break
-                }
+				}
 
-                query[1] = strings.Trim(query[1], " \t\n")
-                query[2] = strings.Trim(query[2], " \t\n")
+				query[1] = strings.Trim(query[1], " \t\n")
+				query[2] = strings.Trim(query[2], " \t\n")
 
-                if len(query[2]) == 0 || query[2] != result[len(result)-1] {
+				if len(query[2]) == 0 || query[2] != result[len(result)-1] {
 					fmt.Println("Error; invalid filename after search query.")
 					break
-                }
+				}
 
-                TableSearch(query[1], query[2])
+				TableSearch(query[1], query[2])
 			case "help":
 				fmt.Print(help_text)
 			default:

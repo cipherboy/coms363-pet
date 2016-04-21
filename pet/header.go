@@ -79,7 +79,7 @@ func TableHeader(filename string) {
 			return
 		}
 
-		fmt.Println(i, "::", attribute_name, "--", columTypeToName[attribute_type])
+		fmt.Println(i, "::", attribute_name, "--", columnTypeToName[attribute_type])
 	}
 	fmt.Println("Number of records: ", strconv.Itoa(records))
 }
