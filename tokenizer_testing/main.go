@@ -54,7 +54,7 @@ func tokenizeQuery(query string) ([]token, error) {
     var join_parts []byte = []byte("&|")
     var operator_parts []byte = []byte("><=!")
     var bareword_parts []byte = []byte("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-")
-    var number_parts []byte = []byte("0123456789")
+    var number_parts []byte = []byte("0123456789.")
     var string_start byte = '\''
     var string_end byte = '\''
 
@@ -250,12 +250,29 @@ func validateRelations(set []rtoken) error {
     return nil
 }
 
+
+/**
+ * Join:
+ *      single: -1
+ *      and:    0
+ *      or:     1
+ * Left: left relation
+ * Right: right relation
+ * Relation: relation value
+ * Value: evaluated relation
+ * Evaluated: status of node
+**/
+var join_evalTree_types map[string]int = map[string]int{"&&": 0, "&": 0, "||": 1, "|": 1}
+var single_evalTree_type = -1
+var and_evalTree_type = 0
+var or_evalTree_type = 1
 type evalTree struct {
     Join        int
     Left        *evalTree
     Right       *evalTree
-    Relation    rtoken
+    Relation    []token
     Value       bool
+    Evaluated   bool
 }
 
 func evalTreeizeRelation(set []rtoken) (evalTree, error) {
@@ -263,16 +280,119 @@ func evalTreeizeRelation(set []rtoken) (evalTree, error) {
     result.Left = nil
     result.Right = nil
     result.Join = -1
+    result.Value = false
+    result.Evaluated = false
 
     for i := 0; i < len(set); i++ {
+        if set[i].Type == relation_rtoken_type {
+            var lone_relation evalTree
+            lone_relation.Left = nil
+            lone_relation.Right = nil
+            lone_relation.Join = -1
+            lone_relation.Value = false
+            lone_relation.Relation = set[i].Value
+            lone_relation.Evaluated = false
 
+            var assigned bool;
+            top := &result;
+
+            for top != nil {
+                if top.Left == nil {
+                    top.Left = &lone_relation
+                    assigned = true
+                    top = nil
+                } else if top.Right == nil {
+                    top.Right = &lone_relation
+                    top = nil
+                    assigned = true
+                } else if top.Right.Join != -1 {
+                    top = top.Right
+                } else {
+                    top = nil
+                    assigned = false
+                }
+            }
+
+            if !assigned {
+                return result, errors.New("Invalid Evaluation Tree: Unable to add new relation (" + strconv.Itoa(i) + ") to root: all full")
+            }
+
+        } else if set[i].Type == join_rtoken_type {
+            // And takes precedence, i.e., goes lower, than or, left to right
+            if result.Join == single_evalTree_type {
+                var ok bool
+                result.Join, ok = join_evalTree_types[set[i].Value[0].Value]
+                if !ok {
+                    return result, errors.New("Invalid Evaluation Tree: Unknown join operator: " + set[i].Value[0].Value)
+                }
+            } else if result.Join == and_evalTree_type {
+                var new_root evalTree;
+                new_root.Left = nil
+                new_root.Right = nil
+                new_root.Join = -1
+                new_root.Value = false
+                new_root.Evaluated = false
+
+                var ok bool
+                new_root.Join, ok = join_evalTree_types[set[i].Value[0].Value]
+                if !ok {
+                    return result, errors.New("Invalid Evaluation Tree: Unknown join operator: " + set[i].Value[0].Value)
+                }
+
+                var current_root evalTree = result
+                new_root.Left = &current_root;
+                result = new_root;
+            } else if result.Join == or_evalTree_type {
+                var new_right evalTree;
+                new_right.Left = nil
+                new_right.Right = nil
+                new_right.Join = -1
+                new_right.Value = false
+                new_right.Evaluated = false
+
+                var ok bool
+                new_right.Join, ok = join_evalTree_types[set[i].Value[0].Value]
+                if !ok {
+                    return result, errors.New("Invalid Evaluation Tree: Unknown join operator: " + set[i].Value[0].Value)
+                }
+
+                new_right.Left = result.Right;
+                result.Right = &new_right;
+            }
+        }
     }
 
     return result, nil
 }
 
+func prettyEvalTree(root *evalTree) string {
+    if root == nil {
+        return ""
+    }
+
+    var result string
+    if root.Join == -1 {
+        if root.Left != nil {
+            for i := range(root.Left.Relation) {
+                result += " " + root.Left.Relation[i].Value
+            }
+        } else if root.Relation != nil {
+            for i := range(root.Relation) {
+                result += " " + root.Relation[i].Value
+            }
+            result = result[1:]
+        }
+    } else if root.Join == 0 {
+        result = "(" + prettyEvalTree(root.Left) + " && " + prettyEvalTree(root.Right) + ")"
+    } else if root.Join == 1 {
+        result = "(" + prettyEvalTree(root.Left) + " || " + prettyEvalTree(root.Right) + ")"
+    }
+
+    return result
+}
+
 func main() {
-    query := "wonderful == 2341 && other == value || something = 'Testing' && magical != 2"
+    query := "wonderful == 2341 && other == value || something = 'Testing' && magical != 2 || somethingelse = '1234'"
     fmt.Println("Parsing query: `" + query + "`")
     var tokens []token
     tokens, err := tokenizeQuery(query)
@@ -312,4 +432,13 @@ func main() {
         fmt.Println(err)
         return
     }
+
+    var tree evalTree
+    tree, err = evalTreeizeRelation(relations)
+    if err != nil {
+        fmt.Println(err)
+        return
+    }
+
+    fmt.Println(prettyEvalTree(&tree))
 }
