@@ -6,14 +6,6 @@ import (
     "errors"
 )
 
-var unknown_token_type int = -1;
-var operator_token_type int = 0;
-var bareword_token_type int = 1;
-var join_token_type int = 2;
-var string_token_type int = 3;
-var number_token_type int = 4;
-var token_types_to_names map[int]string = map[int]string{-1: "unknown", 0: "operator", 1: "bareword", 2: "join", 3: "string", 4: "number"}
-
 /**
  * Value: literal token (string)
  * Type:
@@ -24,6 +16,14 @@ var token_types_to_names map[int]string = map[int]string{-1: "unknown", 0: "oper
  *      String:     3
  *      Number:     4
 **/
+var unknown_token_type int = -1;
+var operator_token_type int = 0;
+var bareword_token_type int = 1;
+var join_token_type int = 2;
+var string_token_type int = 3;
+var number_token_type int = 4;
+var token_types_to_names map[int]string = map[int]string{-1: "unknown", 0: "operator", 1: "bareword", 2: "join", 3: "string", 4: "number"}
+
 type token struct {
 	Value   string
     Type    int
@@ -60,7 +60,7 @@ func tokenizeQuery(query string) ([]token, error) {
             current.Type = operator_token_type
 
             // Look ahead and catch next operator part, if it exists
-            for bytes_contains(query[i+1], operator_parts) != -1 {
+            for i+1 < len(query) && bytes_contains(query[i+1], operator_parts) != -1 {
                 current.Value += string(query[i+1])
                 i += 1
             }
@@ -69,7 +69,7 @@ func tokenizeQuery(query string) ([]token, error) {
             current.Type = number_token_type
 
             // Look ahead and catch next number part, if it exists
-            for bytes_contains(query[i+1], number_parts) != -1 {
+            for i+1 < len(query) && bytes_contains(query[i+1], number_parts) != -1 {
                 current.Value += string(query[i+1])
                 i += 1
             }
@@ -78,7 +78,7 @@ func tokenizeQuery(query string) ([]token, error) {
             current.Type = bareword_token_type
 
             // Look ahead and catch next bareword part, if it exists
-            for bytes_contains(query[i+1], bareword_parts) != -1 {
+            for i+1 < len(query) && bytes_contains(query[i+1], bareword_parts) != -1 {
                 current.Value += string(query[i+1])
                 i += 1
             }
@@ -87,7 +87,7 @@ func tokenizeQuery(query string) ([]token, error) {
             current.Type = join_token_type
 
             // Look ahead and catch next join part, if it exists
-            for bytes_contains(query[i+1], join_parts) != -1 {
+            for i+1 < len(query) && bytes_contains(query[i+1], join_parts) != -1 {
                 current.Value += string(query[i+1])
                 i += 1
             }
@@ -119,10 +119,6 @@ func tokenizeQuery(query string) ([]token, error) {
     return result, nil
 }
 
-var undefined_rtoken_type int = -1
-var relation_rtoken_type int = 0
-var join_rtoken_type int = 1
-
 /**
  * Value: set of tokens
  * Type:
@@ -130,6 +126,10 @@ var join_rtoken_type int = 1
  *      Relation:   0
  *      Join:       1
 **/
+var undefined_rtoken_type int = -1
+var relation_rtoken_type int = 0
+var join_rtoken_type int = 1
+var rtoken_types_to_names map[int]string = map[int]string{-1: "unknown", 0: "relation", 1: "join"}
 type rtoken struct {
 	Value   []token
     Type    int
@@ -154,7 +154,7 @@ func relationizeTokens(set []token) ([]rtoken, error) {
 
                 i += 1
 
-                if set[i].Type == string_token_type || set[i].Type == number_token_type {
+                if set[i].Type == string_token_type || set[i].Type == number_token_type || set[i].Type == bareword_token_type {
                     current.Value = append(current.Value, set[i])
                 } else {
                     return []rtoken(nil), errors.New("Invalid relation: cannot have type" + token_types_to_names[set[i].Type] + "(" + strconv.Itoa(set[i].Type) + ") after type bareword (" + strconv.Itoa(bareword_token_type) + ")")
@@ -176,9 +176,10 @@ func relationizeTokens(set []token) ([]rtoken, error) {
 }
 
 func main() {
-    fmt.Println("Parsing query: `wonderful == 2341 && other >= 12345 || something = 'Testing'`")
+    query := "wonderful == 2341 && other >= 12345 || something = 'Testing' && magical != 2"
+    fmt.Println("Parsing query: `" + query + "`")
     var tokens []token
-    tokens, err := tokenizeQuery("wonderful == 2341 && other >= 12345 || something = 'Testing'")
+    tokens, err := tokenizeQuery(query)
     if err != nil {
         fmt.Println(err)
         return
@@ -209,5 +210,6 @@ func main() {
             fmt.Println("\t\tValue: `" + relations[i].Value[j].Value + "`")
         }
     }
+
 
 }
