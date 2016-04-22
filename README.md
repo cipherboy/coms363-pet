@@ -20,6 +20,16 @@ This is provided via an interactive prompt with readline support. Tested on
 Mac OS X and Linux, using Go 1.6.1. Interactive commands can be listed via
 the built-in help text. Type 'help' to get started.  
 
+## Test cases:
+
+    search "Name = 'Bernie Sanders'" ../tables/abc.tb
+    search "Name = 'Bernie Sanders' | Married = F" ../tables/abc.tb
+    search "Salary > 89076" ../tables/abc.tb
+    search "Salary >= 89076" ../tables/abc.tb
+    search "Salary < 89076" ../tables/abc.tb
+    search "Salary <= 89076" ../tables/abc.tb
+    search "Salary < 10026 | Married = T" ../tables/abc.tb
+
 ## Building
 To build and run, make sure go = 1.6.1 is installed. Then execute the following:
 

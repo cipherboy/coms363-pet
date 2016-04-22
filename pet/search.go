@@ -726,7 +726,11 @@ func TableSearch(query string, filename string) {
 		return
 	}
 
+    fmt.Println("Evaluated Query:")
 	fmt.Println(prettyEvalTree(&tree))
+    fmt.Print("\n\n")
+
+    var found int = 0
 
 	file = file[1:]
 	for i := range file {
@@ -734,9 +738,15 @@ func TableSearch(query string, filename string) {
 		var values []string = strings.Split(line, "|")
 
 		if evaluateTreeForRow(tree, attribute_names, attribute_types, values) {
-			fmt.Println("Found match:", i)
+            fmt.Println("==== RID:", i, "====")
+        	for j := range values {
+        		fmt.Println(attribute_names[j], "("+columnTypeToName[attribute_types[j]]+"): " + values[j])
+        	}
+            fmt.Print("\n\n")
+            found += 1
 		}
 	}
 
+    fmt.Println("Matched rows: ", found)
 	fmt.Println("Successfully searched in table `", filename, "`!")
 }
