@@ -415,11 +415,186 @@ func prettyEvalTree(root *evalTree) string {
 }
 
 func evaluateTreeForRow(root evalTree, column_names []string, column_types []int, row []string) bool {
-	return false
+	var copy evalTree = root
+    recursiveEvaluateTreeForRow(&copy, column_names, column_types, row)
+
+    if copy.Evaluated == false {
+        fmt.Println("Error evaluating tree...")
+    }
+
+    return copy.Value
 }
 
-func evaluateRelationForRow(relation rtoken, column_names []string, column_types []int, row []string) bool {
-	return false
+func recursiveEvaluateTreeForRow(root *evalTree, column_names []string, column_types []int, row []string) {
+	if root == nil {
+		return
+	}
+
+	if root.Join == -1 {
+		if root.Left != nil {
+            root.Left.Evaluated = true
+            root.Left.Value = evaluateRelationForRow(root.Left.Relation, column_names, column_types, row)
+            root.Evaluated = true
+            root.Value = root.Left.Value
+		} else if root.Relation != nil {
+            root.Evaluated = true
+            root.Value = evaluateRelationForRow(root.Relation, column_names, column_types, row)
+		}
+	} else if root.Join == 0 {
+        recursiveEvaluateTreeForRow(root.Left, column_names, column_types, row)
+        recursiveEvaluateTreeForRow(root.Right, column_names, column_types, row)
+
+        if root.Left != nil && root.Left.Evaluated == true {
+            root.Value = root.Left.Value
+            root.Evaluated = true
+
+            if root.Right != nil && root.Right.Evaluated == true {
+                root.Value = root.Value && root.Right.Value
+            }
+        } else {
+            if root.Right != nil && root.Right.Evaluated == true {
+                root.Value = root.Right.Value
+                root.Evaluated = true
+            } else {
+                root.Evaluated = false
+            }
+        }
+	} else if root.Join == 1 {
+        recursiveEvaluateTreeForRow(root.Left, column_names, column_types, row)
+        recursiveEvaluateTreeForRow(root.Right, column_names, column_types, row)
+
+        if root.Left != nil && root.Left.Evaluated == true {
+            root.Value = root.Left.Value
+            root.Evaluated = true
+
+            if root.Right != nil && root.Right.Evaluated == true {
+                root.Value = root.Value || root.Right.Value
+            }
+        } else {
+            if root.Right != nil && root.Right.Evaluated == true {
+                root.Value = root.Right.Value
+                root.Evaluated = true
+            } else {
+                root.Evaluated = false
+            }
+        }
+	}
+
+	return
+}
+
+func evaluateRelationForRow(tokens []token, column_names []string, column_types []int, row []string) bool {
+    if len(tokens) != 3 {
+        return false
+    }
+
+    var found_column_id int = strings_contains(tokens[0].Value, column_names)
+
+    if found_column_id == -1 {
+        fmt.Println("Unknown bareword column name: " + tokens[0].Value)
+        return false
+    }
+
+    var row_value string = row[found_column_id]
+    var comparison_value string = tokens[2].Value
+
+	if column_types[found_column_id] == 1 {
+		real_row_value, err := strconv.Atoi(row_value )
+
+		if err != nil {
+			fmt.Println("Unable to convert row value to integer:", err)
+            return false
+		} else {
+    		real_comparison_value, err := strconv.Atoi(comparison_value)
+
+    		if err != nil {
+    			fmt.Println("Unable to convert comparison value to integer:", err)
+                return false
+    		} else {
+                if tokens[1].Value == "=" || tokens[1].Value == "==" {
+                    return real_row_value == real_comparison_value
+                } else if tokens[1].Value == "!=" {
+                    return real_row_value != real_comparison_value
+                } else if tokens[1].Value == ">" {
+                    return real_row_value > real_comparison_value
+                } else if tokens[1].Value == "<" {
+                    return real_row_value < real_comparison_value
+                } else if tokens[1].Value == "<=" {
+                    return real_row_value <= real_comparison_value
+                } else if tokens[1].Value == ">=" {
+                    return real_row_value >= real_comparison_value
+                } else {
+                    fmt.Println("Unknown comparison operator: " + tokens[1].Value)
+                    return false
+                }
+    		}
+		}
+	} else if column_types[found_column_id] == 2 {
+		real_row_value, err := strconv.ParseFloat(row_value, 64)
+
+		if err != nil {
+			fmt.Println("Unable to convert row value to double:", err)
+			return false
+		} else {
+    		real_comparison_value, err := strconv.ParseFloat(comparison_value, 64)
+
+    		if err != nil {
+    			fmt.Println("Unable to convert comparison value to double:", err)
+    			return false
+    		} else {
+                if tokens[1].Value == "=" || tokens[1].Value == "==" {
+                    return real_row_value == real_comparison_value
+                } else if tokens[1].Value == "!=" {
+                    return real_row_value != real_comparison_value
+                } else if tokens[1].Value == ">" {
+                    return real_row_value > real_comparison_value
+                } else if tokens[1].Value == "<" {
+                    return real_row_value < real_comparison_value
+                } else if tokens[1].Value == "<=" {
+                    return real_row_value <= real_comparison_value
+                } else if tokens[1].Value == ">=" {
+                    return real_row_value >= real_comparison_value
+                } else {
+                    fmt.Println("Unknown comparison operator: " + tokens[1].Value)
+                    return false
+                }
+    		}
+		}
+	} else if column_types[found_column_id] == 3 {
+		real_row_value := strings.ToUpper(row_value)
+
+		if real_row_value != "T" && real_row_value != "F" {
+			fmt.Println("Unable to convert row value to boolean; must either be T or F:", real_row_value)
+			return false
+		} else {
+    		real_comparison_value := strings.ToUpper(comparison_value)
+
+    		if real_row_value != "T" && real_row_value != "F" {
+    			fmt.Println("Unable to convert row value to boolean; must either be T or F:", real_comparison_value)
+    			return false
+    		} else {
+                if tokens[1].Value == "=" || tokens[1].Value == "==" {
+                    return real_row_value == real_comparison_value
+                } else if tokens[1].Value == "!=" {
+                    return real_row_value != real_comparison_value
+                } else {
+                    fmt.Println("Unknown comparison operator: " + tokens[1].Value)
+                    return false
+                }
+    		}
+		}
+	} else if column_types[found_column_id] == 4 {
+        if tokens[1].Value == "=" || tokens[1].Value == "==" {
+            return row_value == comparison_value
+        } else if tokens[1].Value == "!=" {
+            return row_value != comparison_value
+        } else {
+            fmt.Println("Unknown comparison operator: " + tokens[1].Value)
+            return false
+        }
+	}
+
+    return false
 }
 
 func TableSearch(query string, filename string) {
